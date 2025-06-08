@@ -1,5 +1,9 @@
-import streamlit as st
+import os
+os.system("pip install matplotlib")
 import matplotlib.pyplot as plt
+
+import streamlit as st
+
 
 st.set_page_config(page_title="📱 Smartphone E-Waste Impact", layout="wide")
 st.title("📱 Smartphone Dominance in Global E-Waste Generation")
