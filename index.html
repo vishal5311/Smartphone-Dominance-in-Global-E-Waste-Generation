@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D E-Waste Map - CesiumJS</title>
+    <script src="https://cdn.jsdelivr.net/npm/cesium@1.109.0/Build/Cesium/Cesium.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/cesium@1.109.0/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <style>
+        html, body, #cesiumContainer {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+
+        /* ✅ Ensure Cesium's Default Info Panel Appears on the Right */
+        .cesium-infoBox {
+            right: 20px !important;
+            top: 50px !important;
+            max-width: 300px;
+        }
+
+        /* ✅ E-Waste Info Panel - Properly Aligned at Bottom Right */
+        #eWastePanel {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 320px;
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            font-size: 14px;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+            display: none;
+            text-align: left;
+        }
+
+        #eWastePanel strong {
+            color: #FFD700; /* Gold color for highlighting */
+        }
+    </style>
+</head>
+<body>
+    <div id="cesiumContainer"></div>
+    <div id="eWastePanel">Click on a building to see e-waste data...</div>
+
+    <script>
+        // ✅ Step 1: Initialize CesiumJS
+        Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI4NDkwZTBkZi1jZDNlLTQyM2UtOWZiOC01ZDgwMzM2Y2ZlODciLCJpZCI6MjQwODI5LCJpYXQiOjE3MjY5MDgwNzJ9.KZZsnazfzyeokKRAvErc5PY9PAQD2jyihSSCDjw1ofo';
+
+        const viewer = new Cesium.Viewer("cesiumContainer", {
+            terrainProvider: Cesium.Terrain.fromWorldTerrain(), // Realistic terrain
+            imageryProvider: new Cesium.UrlTemplateImageryProvider({
+                url: "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png" // Roads & Landmarks
+            }),
+            navigationHelpButton: false,
+            animation: false,
+            timeline: false,
+            sceneModePicker: false,
+            fullscreenButton: false,
+            geocoder: false,
+            homeButton: false,
+            baseLayerPicker: false,
+            infoBox: true // ✅ Ensure Default Cesium Info Box Opens
+        });
+
+        async function setupScene() {
+            try {
+                // ✅ Load OpenStreetMap 3D Buildings
+                const osmBuildings = await Cesium.createOsmBuildingsAsync();
+                viewer.scene.primitives.add(osmBuildings);
+
+                // ✅ Fly to Chennai (80.2707° E, 13.0827° N)
+                viewer.camera.flyTo({
+                    destination: Cesium.Cartesian3.fromDegrees(80.2707, 13.0827, 1000),
+                    orientation: {
+                        heading: Cesium.Math.toRadians(0),
+                        pitch: Cesium.Math.toRadians(-30),
+                        roll: 0
+                    }
+                });
+
+                console.log("✅ 3D Buildings Loaded Successfully!");
+
+                // ✅ Click event to show Cesium info box + E-Waste Data
+                viewer.screenSpaceEventHandler.setInputAction(function (click) {
+                    const pickedObject = viewer.scene.pick(click.position);
+
+                    if (Cesium.defined(pickedObject) && pickedObject.primitive === osmBuildings) {
+                        // ✅ Open Cesium Default Info Panel
+                        viewer.selectedEntity = pickedObject; 
+
+                        // ✅ Generate Random E-Waste Data
+                        let buildingInfo = `<strong>🏢 Building Data</strong><br>`;
+                        buildingInfo += `E-Waste Level: <strong>${Math.floor(Math.random() * 100)} kg</strong><br>`;
+                        buildingInfo += `Occupants: <strong>${Math.floor(Math.random() * 500)}</strong><br>`;
+                        buildingInfo += `Status: <strong>${["Empty", "Half Full", "Full"][Math.floor(Math.random() * 3)]}</strong>`;
+
+                        // ✅ Show the bottom-right e-waste panel
+                        const eWastePanel = document.getElementById("eWastePanel");
+                        eWastePanel.innerHTML = buildingInfo;
+                        eWastePanel.style.display = "block";
+                    } else {
+                        document.getElementById("eWastePanel").style.display = "none";
+                    }
+                }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+            } catch (error) {
+                console.error("❌ Error loading OSM Buildings: ", error);
+            }
+        }
+
+        setupScene();
+    </script>
+</body>
+</html>
